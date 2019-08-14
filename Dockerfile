@@ -41,7 +41,7 @@ WORKDIR /opt
 ENV KAFKA_HOME /opt/kafka
 RUN wget --no-verbose "http://apache.mirrors.lucidnetworks.net/kafka/$KAFKA_VERSION/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz" -O "/tmp/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz"
 RUN gunzip -c "/tmp/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz" | tar x -C /opt/
-RUN ln -s /opt/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz $KAFKA_HOME
+RUN ln -s /opt/kafka_$SCALA_VERSION-$KAFKA_VERSION $KAFKA_HOME
 RUN rm "/tmp/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz"
 ENV PATH $PATH:$KAFKA_HOME/bin
 
