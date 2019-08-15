@@ -44,6 +44,9 @@ RUN gunzip -c "/tmp/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz" | tar x -C /opt/
 RUN ln -s /opt/kafka_$SCALA_VERSION-$KAFKA_VERSION $KAFKA_HOME
 RUN rm "/tmp/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz"
 ENV PATH $PATH:$KAFKA_HOME/bin
+RUN sed -i '/log4j.rootCategory/ s/INFO/WARN/' $KAFKA_HOME/config/log4j.properties
+
+# TODO: Need to add zookeeper and kafka data storage configuration
 
 RUN yum -y clean all
 

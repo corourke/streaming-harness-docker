@@ -1,6 +1,6 @@
 # Streaming Test Harness, Docker Files
 
-The Dockerfile sets up a Centos OS with the Java8 JDK and Spark.
+The Dockerfile sets up a Centos OS with the Java8 JDK, Spark, and Kafka.
 
 The Spark download step is rather large, and will take 3-5 minutes to complete -- don't worry, the install is not hanging.
 
