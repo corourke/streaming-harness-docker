@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: scan-generator01
+  name: scan-generator1
   labels:
     app: scan-generator1
 spec:

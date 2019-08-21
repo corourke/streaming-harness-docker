@@ -99,6 +99,11 @@ public class ScanDataGenerator {
             properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
             properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
+            // possibly unnecessary
+            properties.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, "4096");
+            properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
+            properties.setProperty(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, "3000");
+
             // create the producer
             this.producer = new KafkaProducer<String, String>(properties);
 
@@ -106,7 +111,6 @@ public class ScanDataGenerator {
 
         public void run() {
             MockNeat mock = MockNeat.threadLocal();
-
 
 //            final class POS_Scan {
 //                String location_id;
@@ -116,12 +120,16 @@ public class ScanDataGenerator {
 //            }
 
             try {
+                Long lastTimestampReported = 0L;
+                Long count=0L;
+
                 while (runnable) {
                     String location = instance + "-" + String.format("%03d", mock.ints().range(1, 50).get());
+                    Long timestamp = Instant.now().toEpochMilli();
 
                     String value = mock.csvs()
                             .column(location)
-                            .column(Instant.now().toEpochMilli())
+                            .column(timestamp)
                             .column(mock.strings().size(11).type(StringType.NUMBERS)) // TODO: Use real UPC numbers
                             .column(mock.ints().range(1, 3)) // TODO: use better qty formula
                             .accumulate(1, "\n")
@@ -136,9 +144,15 @@ public class ScanDataGenerator {
                     // send data - asynchronous
                     producer.send(record);
 
-                    // flush
-                    // TODO: take out for production, slows things down.
-                    producer.flush();
+                    // flush() -- do not use for live testing, radically slows things down
+                    //producer.flush();
+
+                    // Code to report how many rows have been output
+                    if (timestamp - lastTimestampReported >= 1000 ) {
+                        System.out.println("Count (instance: " + instance + "): " + count);
+                        lastTimestampReported = timestamp;
+                    }
+                    count++;
                 }
             } catch (Exception e) {
                 logger.error("Exception in Producer thread: " + e);

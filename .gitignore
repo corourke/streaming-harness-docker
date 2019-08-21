@@ -6,4 +6,5 @@ bin/
 checkpoint/
 twitter.txt
 scan_data/
-/target/
+target/
+volumes/
