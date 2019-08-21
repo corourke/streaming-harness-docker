@@ -1,0 +1,7 @@
+#cloud-config
+package_upgrade: true
+packages:
+  - zookeeper
+write_files:
+runcmd:
+ 

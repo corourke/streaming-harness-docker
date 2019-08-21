@@ -1,0 +1,27 @@
+# https://hub.docker.com/_/zookeeper
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: zookeeper1
+spec:
+  replicas: 1
+  selector:
+    app: zookeeper1
+  template:
+    metadata:
+      labels:
+        app: zookeeper1
+    spec:
+      containers:
+      - name: zookeeper1
+        image: wurstmeister/zookeeper
+        ports:
+        - containerPort: 2181
+        - containerPort: 2888
+        - containerPort: 3888
+        - containerPort: 8080
+        env:
+        - name: ZOOKEEPER_ID
+          value: "1"
+        - name: ZOOKEEPER_SERVER_1
+          value: zoo1

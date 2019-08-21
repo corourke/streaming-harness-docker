@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: scan-generator01
+  labels:
+    app: scan-generator1
+spec:
+  containers:
+  - name: scan-generator1
+    image: scan_generator
+    env:
+    - name: PRODUCER_INSTANCE
+      value: "01"
+    - name: KAFKA_BOOTSTRAP_SERVERS
+      value: kaf1

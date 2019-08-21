@@ -1,0 +1,23 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: zoo1
+spec:
+  type: LoadBalancer
+  externalIPs:
+    - 192.168.99.103
+  ports:
+    - name: port-2181
+      port: 2181
+      protocol: TCP
+    - name: port-2888
+      port: 2888
+      protocol: TCP
+    - name: port-3888
+      port: 3888
+      protocol: TCP
+    - name: port-8080
+      port: 8080
+      protocol: TCP
+  selector:
+    app: zookeeper1
