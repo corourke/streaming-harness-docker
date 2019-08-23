@@ -6,14 +6,13 @@ services:
     hostname: zoo1
     ports:
       - "2181:2181"
-      - "8080:8080"
     environment:
         ZOO_MY_ID: 1
         ZOO_PORT: 2181
         ZOO_LOG4J_PROP: "INFO,ROLLINGFILE"
     volumes:
-      - ./volumes/zoo1/data:/data
-      - ./volumes/zoo1/datalog:/datalog
+      - ${WEBAPP_STORAGE_HOME}/zoo1/data:/data
+      - ktestvolume:/datalog
 
   kafka1:
     image: wurstmeister/kafka
@@ -21,8 +20,6 @@ services:
     ports:
       - "9092:9092"
     environment:
-      #KAFKA_ADVERTISED_HOST_NAME: ${DOCKER_HOST_IP}
-
       KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP}:9092
       KAFKA_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19092,LISTENER_DOCKER_EXTERNAL://:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
@@ -33,9 +30,9 @@ services:
       KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     volumes:
-      - ./volumes/kafka1/data:/var/lib/kafka/data
-      - ./volumes/kafka/logs:/tmp/kafka-logs
-      - ./volumes/kafka1/logs:/kafka/kafka-logs-kafka1
+      - ${WEBAPP_STORAGE_HOME}/kafka1/data:/var/lib/kafka/data
+      - ${WEBAPP_STORAGE_HOME}/kafka/logs:/tmp/kafka-logs
+      - ${WEBAPP_STORAGE_HOME}/kafka1/logs:/kafka/kafka-logs-kafka1
     depends_on:
       - zoo1
   scan-generator1:
@@ -54,3 +51,8 @@ services:
       PRODUCER_INSTANCE: "02"
     depends_on:
       - kafka1
+
+volumes:
+  -name: ktestvolume
+  storageAccountName: ktestgeneratorstorage1
+  storageAccountKey: Yja1cn2o3V+AganU20S03GPCQFpuX2BD0Hgtk7PKsNK3R2awjQrV4wuGMU2kv4wTs9c1NAHiKrDTBKZ/3LXXQA==
