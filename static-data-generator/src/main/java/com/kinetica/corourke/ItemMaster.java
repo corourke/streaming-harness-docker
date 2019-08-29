@@ -2,8 +2,6 @@ package com.kinetica.corourke;
 
 import com.opencsv.bean.CsvBindByName;
 import net.andreinc.mockneat.MockNeat;
-import net.andreinc.mockneat.abstraction.MockUnit;
-import net.andreinc.mockneat.abstraction.MockUnitInt;
 import net.andreinc.mockneat.types.enums.StringType;
 
 import java.math.BigDecimal;
@@ -11,13 +9,13 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Random;
 
-public class ItemMasterBean {
+public class ItemMaster {
     private MockNeat mock = MockNeat.threadLocal();;
 
     private static Integer item_seq = 12345;
 
     private static ArrayList<Map> categories;
-    private static ArrayList<Double> category_probabilities;
+    private static Probabilities category_probabilities;
 
     @CsvBindByName
     private String item_upc;
@@ -37,9 +35,9 @@ public class ItemMasterBean {
     @CsvBindByName(column = "_frequency")
     private Integer frequency;
 
-    ItemMasterBean(ArrayList<Map> categories, ArrayList<Double> category_probabilities) {
-        ItemMasterBean.categories = categories;
-        ItemMasterBean.category_probabilities = category_probabilities;
+    ItemMaster(ArrayList<Map> categories, Probabilities p) {
+        ItemMaster.categories = categories;
+        ItemMaster.category_probabilities = p;
         generate();
     }
 
@@ -67,6 +65,7 @@ public class ItemMasterBean {
         return frequency;
     }
 
+    // Create all values
     private void generate() {
         // UPC Code -- 11 digits
         item_upc = mock.strings()
@@ -79,13 +78,13 @@ public class ItemMasterBean {
         item_id = item_seq++;
 
         // Category Code based on probability table
-        Map category = categories.get(get_index_from_probabilities_table(category_probabilities));
+        Map category = categories.get(category_probabilities.get_random_index());
         category_code = Integer.parseInt(category.get("category_code").toString());
 
-        // Item Price
+        // Item Price - vary by 10% up/down
         Double avg_price =  Double.valueOf(category.get("_avg_price").toString());
         Double variance = new Random().nextGaussian();
-        item_price = new BigDecimal(avg_price + (avg_price * .2 * variance)).setScale(2, BigDecimal.ROUND_HALF_DOWN);
+        item_price = new BigDecimal(avg_price + (avg_price * .1 * variance)).setScale(2, BigDecimal.ROUND_HALF_DOWN);
 
         // Replenishment Quantity -- should probably be based on _avg_price
         repl_qty = mock.ints().from(new int[]{1, 12, 18, 24}).get();
@@ -99,13 +98,4 @@ public class ItemMasterBean {
                 .get();
     }
 
-    private Integer get_index_from_probabilities_table(ArrayList<Double> probabilities) {
-        Double r = Math.random();
-        for (int p = 0; p < probabilities.size(); p++) {
-            if (r < probabilities.get(p)) {
-                return p;
-            }
-        }
-        return 0;
-    }
 }

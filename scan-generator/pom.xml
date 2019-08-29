@@ -27,7 +27,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>com.kinetica.scan_generator.ScanDataGenerator</mainClass>
+                            <mainClass>com.kinetica.corourke.ScanDataGenerator</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
