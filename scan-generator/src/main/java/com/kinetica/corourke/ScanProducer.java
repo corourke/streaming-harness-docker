@@ -1,5 +1,7 @@
 package com.kinetica.corourke;
 
+import com.google.gson.Gson;
+import com.opencsv.CSVReaderHeaderAware;
 import net.andreinc.mockneat.MockNeat;
 import net.andreinc.mockneat.types.enums.StringType;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -9,10 +11,18 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.time.Instant;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+
 
 public class ScanProducer implements Runnable {
     private KafkaProducer<String, String> producer;
@@ -22,6 +32,8 @@ public class ScanProducer implements Runnable {
     private AtomicInteger rate;
     private String instance;
     private Logger logger = LoggerFactory.getLogger(ScanProducer.class.getName());
+    private ArrayList<String> items = new ArrayList<>(32000);
+
 
     ScanProducer(String bootstrapServers,
                  String topic,
@@ -35,6 +47,10 @@ public class ScanProducer implements Runnable {
         this.state = state;
         this.rate = rate;
 
+        // Read in the UPC codes from the item_master file
+        load_csv(logger, items);
+
+
         // create producer properties
         Properties properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -43,23 +59,25 @@ public class ScanProducer implements Runnable {
 
         // possibly unnecessary
         properties.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, "4096");
-        properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
-        properties.setProperty(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, "3000");
+        properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "2");
+        properties.setProperty(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, "1000");
 
         // create the producer
         this.producer = new KafkaProducer<String, String>(properties);
+    }
 
+
+    // This bean is required by the gson library to produce the JSON output
+    private static class POS_Scan {
+        Integer store_id;
+        Long scan_ts;
+        String item_upc;
+        Integer unit_qty;
     }
 
     public void run() {
         MockNeat mock = MockNeat.threadLocal();
-
-//            final class POS_Scan {
-//                String location_id;
-//                Long scan_ts;
-//                String item_upc;
-//                Integer unit_qty;
-//            }
+        Gson gson = new Gson();
 
         try {
             Long lastTimestamp = Instant.now().toEpochMilli();
@@ -80,24 +98,33 @@ public class ScanProducer implements Runnable {
                 }
 
                 if(state.get() ==1) { // 1 = RUNNING
-
-                    String location = instance + "-" + String.format("%03d", mock.ints().range(1, 50).get());
-                    Long timestamp = Instant.now().toEpochMilli();
+                    long timestamp = Instant.now().toEpochMilli();
 
                     // TODO: This is the only non-generic part of this class -- make a callback
-                    String value = mock.csvs() // TODO: generate JSON instead
-                            .column(location) // TODO: use store location
-                            .column(timestamp)
-                            .column(mock.strings().size(10).type(StringType.NUMBERS).prepend("1")) // TODO: Use real UPC numbers
-                            .column(mock.ints().range(1, 3)) // TODO: use better qty formula
-                            .accumulate(1, "\n")
-                            .get();
+                    POS_Scan pos_scan = new POS_Scan();
+
+                    // Store number
+                    // TODO: should probably check the seed data rather than assume
+                    pos_scan.store_id = mock.ints().range(1234, 4233).get();
+
+                    pos_scan.scan_ts = timestamp;
+
+                    // Random UPC number from item_master
+                    int index = (int)(Math.random() * items.size());
+                    pos_scan.item_upc = items.get((int)(Math.random() * items.size()));
+
+                    pos_scan.unit_qty = mock.probabilites(Integer.class)
+                            .add(.5, 1)
+                            .add(.25, 2)
+                            .add(.15, 3)
+                            .add(.10, 4).get();
 
                     String key = instance; // region
+                    String value = gson.toJson(pos_scan);
 
                     // create a producer record
                     ProducerRecord<String, String> record =
-                            new ProducerRecord<String, String>(topic, key, value);
+                            new ProducerRecord<>(topic, value);
 
                     // send data - asynchronous
                     producer.send(record);
@@ -130,6 +157,27 @@ public class ScanProducer implements Runnable {
     public void shutdown() {
         logger.info("Stopping producer");
         state.set(0); // EXIT
+    }
+
+    private static void load_csv(Logger logger, AbstractList list) {
+        try {
+            // TODO: Take output file from command line
+            Reader reader = new FileReader("./src/main/resources/seed-data/item_master.csv");
+            CSVReaderHeaderAware csvReader = new CSVReaderHeaderAware(reader);
+            Map csvLine;
+
+            // Read in each category from the CSV file
+            while((csvLine = csvReader.readMap()) != null) {
+                list.add(csvLine.get("ITEM_UPC"));
+            }
+            csvReader.close();
+            reader.close();
+
+        } catch (FileNotFoundException e) {
+            logger.error("Can not find input CSV file. ", e);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

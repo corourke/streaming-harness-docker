@@ -1,11 +1,16 @@
 package com.kinetica.corourke;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.time.Instant;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.lang.String;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.opencsv.CSVReaderHeaderAware;
 import net.andreinc.mockneat.types.enums.StringType;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -28,15 +33,17 @@ public class ScanDataGenerator {
     private void run() {
         final Logger logger = LoggerFactory.getLogger(ScanDataGenerator.class);
 
+        // Set up Kafka producer
         String bootstrapServers = getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092");
         String instance = getenv("PRODUCER_INSTANCE", "01");
         String topic = "pos_scans";
 
-        final AtomicInteger state = new AtomicInteger(2);
+        // Thread safe state variables
+        final AtomicInteger state = new AtomicInteger(1);
         // 0 EXIT
         // 1 RUNNING
         // 2 WAITING
-        final AtomicInteger rate = new AtomicInteger(100);
+        final AtomicInteger rate = new AtomicInteger(1);
 
         // Start command poller -- reads start, stop, rate commands
         Runnable commandPoller = new CommandPoller(bootstrapServers,
@@ -83,6 +90,7 @@ public class ScanDataGenerator {
             return value;
         }
     }
+
 }
 
 
