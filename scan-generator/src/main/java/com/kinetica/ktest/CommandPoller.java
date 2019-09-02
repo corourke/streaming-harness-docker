@@ -1,5 +1,6 @@
-package com.kinetica.corourke;
+package com.kinetica.ktest;
 
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
@@ -14,20 +15,34 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.*;
+
 public class CommandPoller implements Runnable {
     private Logger logger = LoggerFactory.getLogger(CommandPoller.class);
     private String bootstrapServers = "localhost:9092";
     private String topic;
     private String instance;
-    private AtomicInteger state;
-    private AtomicInteger rate;
 
-    public CommandPoller(String _bs, String _topic, String _instance, AtomicInteger _state, AtomicInteger _rate) {
+    private int rate;
+    private int state;
+
+    private ControllerMBean controller;
+
+    public CommandPoller(String _bs, String _topic, String _instance) {
         bootstrapServers = _bs;
         topic = _topic;
         instance = _instance;
-        state = _state;
-        rate = _rate;
+
+        // Get the Controller bean
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        try {
+            controller = JMX.newMBeanProxy(mbs,
+                    new ObjectName("com.kinetica.ktest:type=basic,name=Controller"),
+                    ControllerMBean.class, true);
+        } catch ( MalformedObjectNameException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
@@ -41,21 +56,21 @@ public class CommandPoller implements Runnable {
             for(ConsumerRecord<String,String> record : records) {
                 String[] fields = record.value().split(" ", 2);
                 String command = fields[0];
-                logger.info("Command received: " + command);
+                System.out.println("Command received: " + command);
 
                 switch(command) {
                     case "RATE":
                         int new_rate = Integer.parseInt(fields[1]);
-                        rate.set(new_rate);
+                        controller.setRate(new_rate);
                         break;
                     case "START":
-                        state.set(1); // 1 = RUNNING
+                        controller.setState(1); // 1 = RUNNING
                         break;
                     case "STOP":
-                        state.set(2); // 2 = WAITING
+                        controller.setState(2); // 2 = WAITING
                         break;
                     case "EXIT":
-                        state.set(0); // 0 = EXIT
+                        controller.setState(0); // 0 = EXIT
                         break loop;
                     default:
                         logger.error("Unexpected command received: " + command);

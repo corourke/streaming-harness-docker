@@ -1,36 +1,39 @@
-package com.kinetica.corourke;
+package com.kinetica.ktest;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.time.Instant;
-import java.util.*;
+import java.lang.management.ManagementFactory;
 import java.util.concurrent.CountDownLatch;
 import java.lang.String;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import com.opencsv.CSVReaderHeaderAware;
-import net.andreinc.mockneat.types.enums.StringType;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.andreinc.mockneat.MockNeat;
+import javax.management.*;
 
 public class ScanDataGenerator {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         new ScanDataGenerator().run();
     }
 
-    private ScanDataGenerator() {
+    private ScanDataGenerator() throws Exception {
+
+        // Register our Controller MBean with the Agent
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        ObjectName objectName = null;
+        try {
+            objectName = new ObjectName("com.kinetica.ktest:type=basic,name=Controller");
+            Controller mbean = new Controller();
+            mbs.registerMBean(mbean, objectName);
+        } catch (MalformedObjectNameException
+                | InstanceAlreadyExistsException
+                | MBeanRegistrationException
+                | NotCompliantMBeanException e) {
+            e.printStackTrace();
+        }
+
     }
 
-    private void run() {
+    private void run() throws Exception {
         final Logger logger = LoggerFactory.getLogger(ScanDataGenerator.class);
 
         // Set up Kafka producer
@@ -38,16 +41,10 @@ public class ScanDataGenerator {
         String instance = getenv("PRODUCER_INSTANCE", "01");
         String topic = "pos_scans";
 
-        // Thread safe state variables
-        final AtomicInteger state = new AtomicInteger(1);
-        // 0 EXIT
-        // 1 RUNNING
-        // 2 WAITING
-        final AtomicInteger rate = new AtomicInteger(1);
 
         // Start command poller -- reads start, stop, rate commands
         Runnable commandPoller = new CommandPoller(bootstrapServers,
-                "scan_generator_commands", instance, state, rate);
+                "scan_generator_commands", instance);
         Thread pollerThread = new Thread(commandPoller);
         pollerThread.start();
 
@@ -59,8 +56,6 @@ public class ScanDataGenerator {
         Runnable scanProducer = new ScanProducer(
                 bootstrapServers,
                 topic,
-                state,
-                rate,
                 instance,
                 latch
         );

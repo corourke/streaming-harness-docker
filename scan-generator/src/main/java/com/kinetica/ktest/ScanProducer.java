@@ -1,9 +1,8 @@
-package com.kinetica.corourke;
+package com.kinetica.ktest;
 
 import com.google.gson.Gson;
 import com.opencsv.CSVReaderHeaderAware;
 import net.andreinc.mockneat.MockNeat;
-import net.andreinc.mockneat.types.enums.StringType;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -11,10 +10,16 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.management.JMX;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.management.ManagementFactory;
 import java.time.Instant;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -28,24 +33,20 @@ public class ScanProducer implements Runnable {
     private KafkaProducer<String, String> producer;
     private CountDownLatch latch;
     private String topic;
-    private AtomicInteger state;
-    private AtomicInteger rate;
     private String instance;
     private Logger logger = LoggerFactory.getLogger(ScanProducer.class.getName());
     private ArrayList<String> items = new ArrayList<>(32000);
 
+    private ControllerMBean controller;
+
 
     ScanProducer(String bootstrapServers,
                  String topic,
-                 AtomicInteger state,
-                 AtomicInteger rate,
                  String instance,
                  CountDownLatch latch) {
         this.latch = latch;
         this.topic = topic;
         this.instance = instance;
-        this.state = state;
-        this.rate = rate;
 
         // Read in the UPC codes from the item_master file
         load_csv(logger, items);
@@ -64,6 +65,16 @@ public class ScanProducer implements Runnable {
 
         // create the producer
         this.producer = new KafkaProducer<String, String>(properties);
+
+        // Get the Controller bean
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        try {
+            controller = JMX.newMBeanProxy(mbs,
+                    new ObjectName("com.kinetica.ktest:type=basic,name=Controller"),
+                    ControllerMBean.class, true);
+        } catch ( MalformedObjectNameException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -84,9 +95,9 @@ public class ScanProducer implements Runnable {
             Long count=0L;
             Long last_count=0L;
 
-            while (state.get() != 0) {
+            while (controller.getState() != 0) {
                 // Don't waste CPU if we are waiting
-                if(state.get() == 2) {
+                if(controller.getState() == 2) {
                     // TODO: THis needs to be sent to instrumentation instead
                     logger.info("Waiting...");
                     try {
@@ -97,7 +108,7 @@ public class ScanProducer implements Runnable {
                     }
                 }
 
-                if(state.get() ==1) { // 1 = RUNNING
+                if(controller.getState() == 1) { // 1 = RUNNING
                     long timestamp = Instant.now().toEpochMilli();
 
                     // TODO: This is the only non-generic part of this class -- make a callback
@@ -135,7 +146,7 @@ public class ScanProducer implements Runnable {
 
                     // Code to report how many rows have been output and rate limiting
                     int time_elapsed = (int) (timestamp - lastTimestamp);
-                    if (time_elapsed >= 1000 || (count - last_count) >= rate.get()) {
+                    if (time_elapsed >= 1000 || (count - last_count) >= controller.getRate()) {
                         // TODO: This needs to be output to the instrumentation device instead
                         logger.info("Count (instance: " + instance + "): " + count + " Rate: " + (count - last_count));
                         if ((time_elapsed) < 1000) {
@@ -156,7 +167,7 @@ public class ScanProducer implements Runnable {
 
     public void shutdown() {
         logger.info("Stopping producer");
-        state.set(0); // EXIT
+        controller.setState(0); // EXIT
     }
 
     private static void load_csv(Logger logger, AbstractList list) {
