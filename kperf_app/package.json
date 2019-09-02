@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.3.4",
+    "kafkajs": "^1.10.0",
     "meteor-node-stubs": "^0.4.1",
+    "node-zookeeper-client": "^1.0.0",
     "prop-types": "^15.7.2",
     "react": "^16.9.0",
     "react-bootstrap": "^1.0.0-beta.12",
