@@ -19,12 +19,3 @@ export default class App extends React.Component {
     )
   }
 }
-
-
-
-// <Grid>
-//   <Col sm={12} smOffset={0} md={10} mdOffset={1} lg={8} lgOffset={2}>
-//
-
-//   </Col>
-// </Grid>

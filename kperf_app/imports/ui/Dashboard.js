@@ -7,9 +7,10 @@ import { withTracker } from 'meteor/react-meteor-data';
 import { HealthChecks } from '../api/healthChecks.js';
 
 import Header from './Header'
-import Block from './Block'
+import TrxCommands from './TrxCommands'
 
 class Dashboard extends React.Component {
+
   render_hc() {
     return (
       <ul>
@@ -41,7 +42,7 @@ class Dashboard extends React.Component {
                   Some quick example text to build on the card title and make up the bulk of
                   the card's content.
                   </Card.Text>
-                  <Button variant="primary">Go somewhere</Button>
+                  <TrxCommands />
                 </Card.Body>
               </Card>
             </Col>
@@ -53,6 +54,7 @@ class Dashboard extends React.Component {
                   <Card.Body>
                   { this.render_hc() }
                   </Card.Body>
+
                 </Card.Body>
               </Card>
             </Col>
