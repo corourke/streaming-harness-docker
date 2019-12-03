@@ -122,7 +122,7 @@ public class ScanProducer implements Runnable {
 
                     // Random UPC number from item_master
                     int index = (int)(Math.random() * items.size());
-                    pos_scan.item_upc = items.get((int)(Math.random() * items.size()));
+                    pos_scan.item_upc = items.get(index);
 
                     pos_scan.unit_qty = mock.probabilites(Integer.class)
                             .add(.5, 1)

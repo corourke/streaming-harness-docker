@@ -1,9 +1,10 @@
-package com.kinetica.corourke;
+package com.github.corourke;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,7 +42,7 @@ class ProbabilitiesTest {
         test_prob.add(20);
         int[] results = new int[3];
         for(int i=0; i<10000; i++) {
-            Integer ri = test_prob.get_random_index();
+            Integer ri = test_prob.get_weighted_index();
             assertTrue(ri >= 0 && ri <= 2, "Expecting index to be 0, 1, 2 only");
             results[ri] += 1;
         }
@@ -50,6 +51,28 @@ class ProbabilitiesTest {
 
     @Test
     void exception_on_large_rand() {
-        Exception ex = assertThrows(IllegalArgumentException.class, () -> test_prob.get_index(150));
+        assertThrows(IllegalArgumentException.class, () -> test_prob.get_index(150));
+    }
+
+    @Test
+    void complete_example() {
+        Map<String, Integer> cars = new LinkedHashMap<>();
+        // Note probabilities do not need to add up to 100, just doing this to make results easy to validate
+        cars.put("ford", 75);
+        cars.put("bmw", 24);
+        cars.put("ferrari", 1);
+
+        Probabilities car_frequencies = new Probabilities();
+        cars.forEach((car, probability) -> car_frequencies.add(probability));
+
+        int[] results = new int[3];
+        for(int i=0; i<10000; i++) {
+            Integer ri = car_frequencies.get_weighted_index();
+            results[ri] += 1;
+        }
+
+        assertTrue(results[2] > 85 && results[2] < 115,
+                "Expect distribution of %1 of 10000 to be near 100, and got " + results[2]);
+
     }
 }

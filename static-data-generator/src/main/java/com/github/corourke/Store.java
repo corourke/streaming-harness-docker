@@ -1,4 +1,4 @@
-package com.kinetica.corourke;
+package com.github.corourke;
 
 import com.github.javafaker.Address;
 import com.github.javafaker.Faker;
@@ -17,6 +17,8 @@ public class Store {
     Double longitude;
     Double latitude;
     String timezone;
+
+    /* TODO: The problem is that the address elements are not correlated */
 
     public Store() {
         Address store_address = faker.address();

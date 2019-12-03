@@ -1,4 +1,4 @@
-package com.kinetica.corourke;
+package com.github.corourke;
 
 import com.opencsv.CSVReaderHeaderAware;
 import com.opencsv.bean.StatefulBeanToCsv;

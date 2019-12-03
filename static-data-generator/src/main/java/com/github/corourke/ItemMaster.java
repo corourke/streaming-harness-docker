@@ -1,4 +1,4 @@
-package com.kinetica.corourke;
+package com.github.corourke;
 
 import com.opencsv.bean.CsvBindByName;
 import net.andreinc.mockneat.MockNeat;
@@ -78,7 +78,7 @@ public class ItemMaster {
         item_id = item_seq++;
 
         // Category Code based on probability table
-        Map category = categories.get(category_probabilities.get_random_index());
+        Map category = categories.get(category_probabilities.get_weighted_index());
         category_code = Integer.parseInt(category.get("category_code").toString());
 
         // Item Price - vary by 10% up/down

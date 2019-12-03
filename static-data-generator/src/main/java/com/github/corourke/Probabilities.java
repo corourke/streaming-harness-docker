@@ -1,4 +1,4 @@
-package com.kinetica.corourke;
+package com.github.corourke;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -6,10 +6,31 @@ import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+/**
+ * Maintains an array of probabilities or frequencies for which each index into the array should be
+ * randomly chosen. For example, say we have the following list of car makes and frequencies:
+ *
+ *         Map<String, Integer> cars = new LinkedHashMap<>();
+ *         cars.put("ford", 75);
+ *         cars.put("bmw", 24);
+ *         cars.put("ferrari", 1);
+ *
+ * Create a Probabilities instance and then populate it:
+ *
+ *         Probabilities car_frequencies = new Probabilities();
+ *         cars.forEach((car, probability) -> car_frequencies.add(probability));
+ *
+ * Generate weighted indexes into the list:
+ *
+ *         int[] results = new int[3];
+ *         for(int i=0; i<10000; i++) {
+ *             Integer ri = car_frequencies.get_weighted_index();
+ *             results[ri] += 1;
+ *         }
+ */
 public class Probabilities {
     /*
-     The category_probabilities table indexes the categories with numbers increasing from zero to one, such
-     that a random number can be compared
+
     */
 
     private ArrayList<BigDecimal> probabilities;
@@ -35,12 +56,15 @@ public class Probabilities {
         add(BigDecimal.valueOf(d));
     }
 
-    public Integer get_random_index() {
+    /**
+     * @return An index into the
+     */
+    public Integer get_weighted_index() {
         BigDecimal rand = scale_max.multiply(BigDecimal.valueOf(Math.random()));
         return get_index(rand);
     }
 
-    // Mostly for testing purposes
+    // Public mostly for testing purposes
     public Integer get_index(BigDecimal rand) {
         for (int p = 0; p < probabilities.size(); p++) {
             if (probabilities.get(p).compareTo(rand) == 1) { // means rand is less than this table entry

@@ -1,6 +1,5 @@
-package com.kinetica.corourke;
+package com.github.corourke;
 
-import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
